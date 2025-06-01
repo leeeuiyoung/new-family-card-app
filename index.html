@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>새 가족 등록 카드 자동 입력 및 저장</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #4a5568;
+        }
+        .form-group input[type="text"],
+        .form-group textarea,
+        .form-group input[type="date"] { /* Added input[type="date"] */
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            line-height: 1.5;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .form-group input[type="text"]:focus,
+        .form-group textarea:focus,
+        .form-group input[type="date"]:focus { /* Added input[type="date"] */
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .radio-group {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .radio-group input[type="radio"] {
+            margin-right: 4px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: #fff;
+            border: 1px solid #4f46e5;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+            border-color: #4338ca;
+        }
+        .btn-secondary {
+            background-color: #fff;
+            color: #4f46e5;
+            border: 1px solid #4f46e5;
+        }
+        .btn-secondary:hover {
+            background-color: #eef2ff;
+        }
+        .input-file {
+            display: none;
+        }
+        .label-file {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            background-color: #4f46e5;
+            color: #fff;
+            border: 1px solid #4f46e5;
+        }
+        .label-file:hover {
+            background-color: #4338ca;
+            border-color: #4338ca;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            text-align: center;
+            display: none; /* Hidden by default */
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none; /* Hidden by default */
+        }
+        .card-item {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .card-item-info {
+            flex-grow: 1;
+            font-size: 0.95rem;
+            color: #4a5568;
+        }
+        .card-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .card-item-actions .btn {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+        .confirm-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1001; /* Higher than messageBox */
+            text-align: center;
+            display: none;
+        }
+        .confirm-box .btn {
+            margin: 0 8px;
+        }
+        /* Style for the detail view */
+        .detail-field {
+            margin-bottom: 12px;
+            text-align: left;
+        }
+        .detail-field strong {
+            display: block;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        .detail-field span {
+            display: block;
+            color: #4a5568;
+            background-color: #edf2f7;
+            padding: 8px 12px;
+            border-radius: 6px;
+            word-break: break-word; /* Ensure long text wraps */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-6 lg:p-8">
+    <div class="container">
+        <div id="formPage" class="page">
+            <h1 class="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800">새 가족 등록 카드 자동 입력 및 저장</h1>
+
+            <div class="card">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">이미지 업로드</h2>
+                <p class="text-gray-600 mb-4">새 가족 등록 카드 이미지를 업로드해주세요. 글씨를 인식하여 아래 양식에 자동으로 입력해 드립니다.</p>
+                <input type="file" id="imageUpload" accept="image/*" class="input-file">
+                <label for="imageUpload" class="label-file">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-4 4 4 4-4V5h-2a1 1 0 100 2h2v1h-2a1 1 0 100 2h2v1h-2a1 1 0 100 2h2v1z" clip-rule="evenodd" />
+                    </svg>
+                    이미지 선택
+                </label>
+                <div id="loadingIndicator" class="mt-4 hidden">
+                    <div class="loading-spinner"></div>
+                    <p class="text-center text-gray-500 mt-2">텍스트 인식 중...</p>
+                </div>
+                <div id="imagePreviewContainer" class="mt-6 hidden">
+                    <h3 class="text-lg font-medium mb-2 text-gray-700">업로드된 이미지 미리보기:</h3>
+                    <img id="imagePreview" src="#" alt="Image Preview" class="max-w-full h-auto rounded-lg shadow-md border border-gray-200">
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">새 가족 등록 카드 양식</h2>
+                <form id="newFamilyCardForm">
+                    <div class="form-group">
+                        <label for="ministerName">목사님 (청장년)</label>
+                        <input type="text" id="ministerName" name="ministerName" placeholder="예: 25 이의영 목사님 (청장년)">
+                    </div>
+                    <div class="form-group">
+                        <label for="evangelist">전도자</label>
+                        <input type="text" id="evangelist" name="evangelist" placeholder="예: 새롭게 하소셔">
+                    </div>
+                    <div class="form-group">
+                        <label for="registrationDate">등록일</label>
+                        <input type="text" id="registrationDate" name="registrationDate" placeholder="예: 2005년 5월 25일">
+                    </div>
+                    <div class="form-group">
+                        <label for="name">이름</label>
+                        <input type="text" id="name" name="name" placeholder="예: 김혜란 성도">
+                    </div>
+                    <div class="form-group">
+                        <label>성별</label>
+                        <div class="radio-group">
+                            <input type="radio" id="genderMale" name="gender" value="남">
+                            <label for="genderMale">남</label>
+                            <input type="radio" id="genderFemale" name="gender" value="여">
+                            <label for="genderFemale">여</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>결혼 여부</label>
+                        <div class="radio-group">
+                            <input type="radio" id="maritalMarried" name="maritalStatus" value="기혼">
+                            <label for="maritalMarried">기혼</label>
+                            <input type="radio" id="maritalSingle" name="maritalStatus" value="미혼">
+                            <label for="maritalSingle">미혼</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="birthDate">생년월일</label>
+                        <input type="date" id="birthDate" name="birthDate"> </div>
+                    <div class="form-group">
+                        <label for="phoneNumber">전화 번호</label>
+                        <input type="text" id="phoneNumber" name="phoneNumber" placeholder="예: 010-3074-4028">
+                    </div>
+                    <div class="form-group">
+                        <label>신앙 경력</label>
+                        <div class="radio-group">
+                            <input type="radio" id="faithNewbie" name="faithHistory" value="초신자">
+                            <label for="faithNewbie">초신자</label>
+                            <input type="radio" id="faithSaint" name="faithHistory" value="성도">
+                            <label for="faithSaint">성도</label>
+                            <input type="radio" id="faithDeacon" name="faithDeacon" value="집사">
+                            <label for="faithDeacon">집사</label>
+                            <input type="radio" id="faithElderess" name="faithHistory" value="권사">
+                            <label for="faithElderess">권사</label>
+                            <input type="radio" id="faithElder" name="faithHistory" value="장로">
+                            <label for="faithElder">장로</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>세례 여부</label>
+                        <div class="radio-group">
+                            <input type="radio" id="baptismYes" name="baptism" value="O">
+                            <label for="baptismYes">O</label>
+                            <input type="radio" id="baptismNo" name="baptism" value="X">
+                            <label for="baptismNo">X</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="carNumber">차량 번호</label>
+                        <input type="text" id="carNumber" name="carNumber" placeholder="예: 13저8777">
+                    </div>
+                    <div class="form-group">
+                        <label for="address">주소</label>
+                        <textarea id="address" name="address" placeholder="예: 경기도 평택시 상서재로 4길 13 (센트럴 12단지) 207동 2202호"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>담임 목사님과 카톡 연결을 원 하는 경우만 체크 해 주세요.</label>
+                        <div class="radio-group">
+                            <input type="radio" id="kakaoConnectYes" name="kakaoConnect" value="원합니다">
+                            <label for="kakaoConnectYes">원합니다</label>
+                            <input type="radio" id="kakaoConnectNo" name="kakaoConnect" value="원하지 않습니다">
+                            <label for="kakaoConnectNo">원하지 않습니다</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="children">자녀 (이름, 나이)</label>
+                        <textarea id="children" name="children" placeholder="예: 박민준 (7세)"></textarea>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row justify-end mt-4 space-y-3 sm:space-y-0 sm:space-x-3">
+                        <button id="clearFormBtn" class="btn btn-secondary" type="button">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd" />
+                            </svg>
+                            양식 지우기
+                        </button>
+                        <button id="saveCardBtn" class="btn btn-primary" type="button">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M5 4a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2H5zm-1 9v-1h12v1H4z" />
+                                <path d="M10 2a1 1 0 00-1 1v1h2V3a1 1 0 00-1-1z" />
+                            </svg>
+                            카드 저장
+                        </button>
+                    </div>
+                </form>
+                <div class="mt-6 text-center">
+                    <button id="viewCardsListBtn" class="btn btn-secondary" type="button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        저장된 카드 목록 보기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="listPage" class="page hidden">
+            <h1 class="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800">저장된 새 가족 등록 카드 목록</h1>
+            <div class="card">
+                <div class="flex flex-col sm:flex-row mb-4 gap-2">
+                    <input type="text" id="searchQuery" placeholder="이름 또는 전화번호로 검색" class="flex-grow p-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <button id="searchCardsBtn" class="btn btn-primary" type="button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        </svg>
+                        검색
+                    </button>
+                    <button id="refreshCardsBtn" class="btn btn-secondary" type="button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.167A8.995 8.995 0 0110 2c3.924 0 7.25 2.585 8.441 6.167a1 1 0 01-1.902.666A7.001 7.001 0 0010 4c-3.15 0-5.83 1.87-7.07 4.542a1 1 0 01-1.902-.666C2.75 4.585 6.076 2 10 2zM16 17a1 1 0 01-1-1v-2.167A8.995 8.995 0 0110 18c-3.924 0-7.25-2.585-8.441-6.167a1 1 0 011.902-.666A7.001 7.001 0 0010 16c3.15 0 5.83-1.87 7.07-4.542a1 1 0 011.902.666C17.25 15.415 13.924 18 10 18z" clip-rule="evenodd" />
+                        </svg>
+                        모두 보기
+                    </button>
+                    <button id="downloadCardsBtn" class="btn btn-primary" type="button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 01-1-1V6a1 1 0 011-1h5.172a2 2 0 011.414.586l1.828 1.828A2 2 0 0015.172 9H17a1 1 0 011 1v6a1 1 0 01-1 1H3zm5-2a1 1 0 00-1 1v1a1 1 0 102 0v-1a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        엑셀 다운로드
+                    </button>
+                </div>
+                <div id="savedCardsList" class="space-y-2">
+                    <p class="text-gray-500 text-center" id="noCardsMessage">저장된 카드가 없습니다.</p>
+                </div>
+                <div class="mt-6 text-center">
+                    <button id="createNewCardBtn" class="btn btn-primary" type="button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        새 카드 작성
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewPage" class="page hidden">
+            <h1 class="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800">새 가족 등록 카드 상세 보기</h1>
+            <div class="card">
+                <div class="detail-field">
+                    <strong>NO.</strong>
+                    <span id="viewCardNo"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>목사님 (청장년)</strong>
+                    <span id="viewMinisterName"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>전도자</strong>
+                    <span id="viewEvangelist"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>등록일</strong>
+                    <span id="viewRegistrationDate"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>이름</strong>
+                    <span id="viewName"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>성별</strong>
+                    <span id="viewGender"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>결혼 여부</strong>
+                    <span id="viewMaritalStatus"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>생년월일</strong>
+                    <span id="viewBirthDate"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>전화 번호</strong>
+                    <span id="viewPhoneNumber"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>신앙 경력</strong>
+                    <span id="viewFaithHistory"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>세례 여부</strong>
+                    <span id="viewBaptism"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>차량 번호</strong>
+                    <span id="viewCarNumber"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>주소</strong>
+                    <span id="viewAddress"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>담임 목사님과 카톡 연결</strong>
+                    <span id="viewKakaoConnect"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>자녀</strong>
+                    <span id="viewChildren"></span>
+                </div>
+                <div class="detail-field">
+                    <strong>저장 시간</strong>
+                    <span id="viewTimestamp"></span>
+                </div>
+                <div class="mt-6 mb-4 text-center">
+                    <h3 class="text-lg font-medium mb-2 text-gray-700">첨부된 이미지:</h3>
+                    <img id="viewImage" src="" alt="첨부된 이미지" class="max-w-full h-auto rounded-lg shadow-md border border-gray-200 mx-auto" onerror="this.style.display='none'">
+                    <p id="noImageView" class="text-gray-500 mt-2 hidden">첨부된 이미지가 없습니다.</p>
+                </div>
+                <div class="mt-6 text-center">
+                    <button id="backToListBtn" class="btn btn-secondary" type="button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H16a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                        </svg>
+                        목록으로 돌아가기
+                    </button>
+                    <button id="editCardBtn" class="btn btn-primary ml-3" type="button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-7.618 7.617a2 2 0 01-.792.595l-3.322 1.107a.5.5 0 01-.644-.644l1.107-3.322a2 2 0 01.595-.792l7.617-7.618z" />
+                        </svg>
+                        양식에서 편집
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageBox" class="message-box">
+        <p id="messageText" class="text-lg font-medium mb-4"></p>
+        <button id="messageBoxConfirmBtn" class="btn btn-primary" type="button">확인</button>
+    </div>
+
+    <div id="confirmBox" class="confirm-box">
+        <p id="confirmText" class="text-lg font-medium mb-4"></p>
+        <button id="confirmBoxYesBtn" class="btn btn-primary" type="button">예</button>
+        <button id="confirmBoxNoBtn" class="btn btn-secondary" type="button">아니오</button>
+    </div>
+
+    <div id="overlay" class="overlay"></div>
+
+    <script type="module">
+        // Firebase 관련 전역 변수 초기화 (Canvas 환경에서 제공됨)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Firebase SDK 가져오기
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Firebase Storage SDK 추가
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+
+        let app;
+        let auth;
+        let db;
+        let storage; // Firebase Storage 인스턴스
+        let userId = 'anonymous'; // 기본값
+        let isAuthReady = false; // 인증 상태를 추적하는 플래그
+
+        // 전역 DOM 요소 변수 선언 (DOMContentLoaded 이후에 할당됨)
+        let formPage;
+        let listPage;
+        let viewPage;
+        let imageUpload;
+        let imagePreview;
+        let imagePreviewContainer;
+        let loadingIndicator;
+        let newFamilyCardForm;
+        let clearFormBtn;
+        let saveCardBtn;
+        let viewCardsListBtn;
+        let createNewCardBtn;
+        let messageBox;
+        let messageText;
+        let messageBoxConfirmBtn;
+        let confirmBox;
+        let confirmText;
+        let confirmBoxYesBtn;
+        let confirmBoxNoBtn;
+        let overlay;
+        let savedCardsList;
+        let noCardsMessage;
+        let searchQueryInput;
+        let searchCardsBtn;
+        let refreshCardsBtn;
+        let downloadCardsBtn;
+        let backToListBtn;
+        let editCardBtn;
+
+        // 상세 보기 페이지 요소들
+        let viewCardNo;
+        let viewMinisterName;
+        let viewEvangelist;
+        let viewRegistrationDate;
+        let viewName;
+        let viewGender;
+        let viewMaritalStatus;
+        let viewBirthDate;
+        let viewPhoneNumber;
+        let viewFaithHistory;
+        let viewBaptism;
+        let viewCarNumber;
+        let viewAddress;
+        let viewKakaoConnect;
+        let viewChildren;
+        let viewTimestamp;
+        let viewImage; // 상세 보기 페이지에 이미지 표시를 위한 요소
+        let noImageView; // 이미지가 없을 때 표시할 텍스트
+
+        // Firebase 초기화 및 인증
+        async function initializeFirebase() {
+            console.log("Firebase 초기화 시작...");
+            try {
+                if (Object.keys(firebaseConfig).length === 0) {
+                    console.warn("Firebase config가 비어 있습니다. Firebase가 초기화되지 않습니다.");
+                    showMessageBox("Firebase 설정이 누락되었습니다. 앱을 초기화할 수 없습니다.");
+                    return;
+                }
+
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                storage = getStorage(app); // Firebase Storage 초기화
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Firebase: 사용자 인증 완료, UID:", userId);
+                        isAuthReady = true;
+                    } else {
+                        console.log("Firebase: 사용자 인증되지 않음. 익명 로그인 시도...");
+                        try {
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                            userId = auth.currentUser?.uid || crypto.randomUUID();
+                            console.log("Firebase: 익명 또는 커스텀 토큰으로 로그인 완료. 사용자 ID:", userId);
+                            isAuthReady = true;
+                        } catch (authError) {
+                            console.error("Firebase 인증 오류:", authError);
+                            showMessageBox(`인증 오류가 발생했습니다: ${authError.message}. 페이지를 새로고침해주세요.`);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase 초기화 실패:", error);
+                showMessageBox(`Firebase 초기화에 실패했습니다: ${error.message}. 페이지를 새로고침해주세요.`);
+            }
+        }
+
+        // 메시지 박스 표시 함수
+        function showMessageBox(message) {
+            if (messageText) messageText.innerText = message;
+            if (messageBox) messageBox.style.display = 'block';
+            if (overlay) overlay.style.display = 'block';
+        }
+
+        // 메시지 박스 숨기기 함수
+        function hideMessageBox() {
+            if (messageBox) messageBox.style.display = 'none';
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        // 확인 박스 표시 함수
+        function showConfirmBox(message, onConfirm) {
+            if (confirmText) confirmText.innerText = message;
+            if (confirmBox) confirmBox.style.display = 'block';
+            if (overlay) overlay.style.display = 'block';
+
+            if (confirmBoxYesBtn) confirmBoxYesBtn.onclick = null;
+            if (confirmBoxNoBtn) confirmBoxNoBtn.onclick = null;
+
+            if (confirmBoxYesBtn) {
+                confirmBoxYesBtn.onclick = () => {
+                    hideConfirmBox();
+                    onConfirm(true);
+                };
+            }
+            if (confirmBoxNoBtn) {
+                confirmBoxNoBtn.onclick = () => {
+                    hideConfirmBox();
+                    onConfirm(false);
+                };
+            }
+        }
+
+        // 확인 박스 숨기기 함수
+        function hideConfirmBox() {
+            if (confirmBox) confirmBox.style.display = 'none';
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        /**
+         * OCR 텍스트에서 정규 표현식에 해당하는 첫 번째 그룹을 추출합니다.
+         * @param {string} ocrText - 원본 OCR 텍스트.
+         * @param {RegExp} regex - 추출할 정규 표현식.
+         * @returns {string} 추출된 텍스트.
+         */
+        const getMatch = (ocrText, regex) => {
+            const match = ocrText.match(regex);
+            return match && match[1] ? match[1].trim() : '';
+        };
+
+        /**
+         * 'YYYY년 MM월 DD일' 형식의 문자열을 'YYYY-MM-DD' 형식으로 변환합니다.
+         * @param {string} koreanDateStr - 'YYYY년 MM월 DD일' 형식의 날짜 문자열.
+         * @returns {string} 'YYYY-MM-DD' 형식의 날짜 문자열.
+         */
+        function koreanDateToIso(koreanDateStr) {
+            const match = koreanDateStr.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+            if (match) {
+                const year = match[1];
+                const month = match[2].padStart(2, '0');
+                const day = match[3].padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            return koreanDateStr; // 변환 실패 시 원본 반환 (이미 ISO 형식일 수도 있음)
+        }
+
+        /**
+         * 'YYYY-MM-DD' 형식의 문자열을 'YYYY년 MM월 DD일' 형식으로 변환합니다.
+         * @param {string} isoDateStr - 'YYYY-MM-DD' 형식의 날짜 문자열.
+         * @returns {string} 'YYYY년 MM월 DD일' 형식의 날짜 문자열.
+         */
+        function isoDateToKorean(isoDateStr) {
+            const match = isoDateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (match) {
+                const year = match[1];
+                const month = parseInt(match[2], 10); // 0 제거를 위해 parseInt
+                const day = parseInt(match[3], 10);   // 0 제거를 위해 parseInt
+                return `${year}년 ${month}월 ${day}일`;
+            }
+            return isoDateStr; // 변환 실패 시 원본 반환
+        }
+
+        /**
+         * OCR 텍스트를 파싱하여 새 가족 등록 카드 양식 필드를 채웁니다.
+         * @param {string} ocrText - 이미지에서 인식된 텍스트.
+         */
+        function parseAndFillForm(ocrText) {
+            console.log("Full OCR Text:\n", ocrText);
+            if (!newFamilyCardForm) {
+                console.error("Form element 'newFamilyCardForm' not found.");
+                showMessageBox("양식 요소를 찾을 수 없습니다. 페이지를 새로고침해주세요.");
+                return;
+            }
+
+            // NO. (숫자만 추출)
+            const cardNo = getMatch(ocrText, /NO\s*\.\s*(\d+)/);
+            if (newFamilyCardForm.cardNo) newFamilyCardForm.cardNo.value = cardNo;
+            console.log("Extracted Card No:", cardNo);
+
+            // 목사님 (청장년) - 숫자, 한글, 괄호, 공백만 허용
+            const minister = getMatch(ocrText, /(\d+\s*[가-힣]+\s*목사님\s*\(청장년\))/);
+            if (newFamilyCardForm.ministerName) newFamilyCardForm.ministerName.value = minister;
+            console.log("Extracted Minister Name:", minister);
+
+            // 전도자 - '전도자 :' 다음에 오는 한글 문자열을 찾고, 괄호 안의 영어는 무시
+            const evangelist = getMatch(ocrText, /전도자\s*:\s*(?:예\s*:\s*)?([가-힣\s]+?)(?:\s*\(Evangelist:.*?)?(?=\s*등록\s*일|\n)/);
+            if (newFamilyCardForm.evangelist) newFamilyCardForm.evangelist.value = evangelist;
+            console.log("Extracted Evangelist:", evangelist);
+
+            // 등록일 - YYYY년 MM월 DD일 형식
+            const regDate = getMatch(ocrText, /등록\s*일\s*:\s*(?:예\s*:\s*)?(\d{4}\s*년\s*\d{1,2}\s*월\s*\d{1,2}\s*일)/);
+            if (newFamilyCardForm.registrationDate) newFamilyCardForm.registrationDate.value = regDate;
+            console.log("Extracted Registration Date:", regDate);
+
+            // 이름 - '이름 :' 다음에 오는 한글 문자열을 찾고, 괄호 안의 영어는 무시
+            const name = getMatch(ocrText, /이름\s*:\s*(?:예\s*:\s*)?([가-힣\s]+?)(?:\s*\(Name:.*?)?(?=\s*\(남\s*\/\s*여|\s*성별|\n)/);
+            if (newFamilyCardForm.name) newFamilyCardForm.name.value = name;
+            console.log("Extracted Name:", name);
+
+            // 성별 ('여' 또는 '남'이 OCR 텍스트에 포함되어 있는지 확인하여 정확히 일치)
+            if (newFamilyCardForm.gender) {
+                if (ocrText.includes('O 여') || ocrText.includes('여O') || (ocrText.includes('여') && !ocrText.includes('남'))) {
+                    newFamilyCardForm.gender.value = '여';
+                } else if (ocrText.includes('O 남') || ocrText.includes('남O') || (ocrText.includes('남') && !ocrText.includes('여'))) {
+                    newFamilyCardForm.gender.value = '남';
+                } else {
+                    newFamilyCardForm.gender.forEach(radio => radio.checked = false);
+                }
+            }
+            console.log("Set Gender to:", newFamilyCardForm.gender ? newFamilyCardForm.gender.value : 'Not found');
+
+            // 결혼 여부 ('기혼' 또는 '미혼'이 OCR 텍스트에 포함되어 있는지 확인하여 정확히 일치)
+            if (newFamilyCardForm.maritalStatus) {
+                // 'O 기혼' 또는 '기혼 O' 패턴이 먼저 인식되면 '기혼'으로 설정
+                if (ocrText.includes('O 기혼') || ocrText.includes('기혼 O')) {
+                    newFamilyCardForm.maritalStatus.value = '기혼';
+                } 
+                // 'O 미혼' 또는 '미혼 O' 패턴이 인식되면 '미혼'으로 설정
+                else if (ocrText.includes('O 미혼') || ocrText.includes('미혼 O')) {
+                    newFamilyCardForm.maritalStatus.value = '미혼';
+                }
+                // 'O' 패턴이 없으면 단순히 '기혼' 또는 '미혼' 단어가 포함되어 있는지 확인 (한쪽만 명확히 있을 때)
+                else if (ocrText.includes('기혼') && !ocrText.includes('미혼')) {
+                    newFamilyCardForm.maritalStatus.value = '기혼';
+                } else if (ocrText.includes('미혼') && !ocrText.includes('기혼')) {
+                    newFamilyCardForm.maritalStatus.value = '미혼';
+                }
+                // 둘 다 포함되어 있거나 둘 다 없는 경우 초기화
+                else {
+                    newFamilyCardForm.maritalStatus.forEach(radio => radio.checked = false);
+                }
+            }
+            console.log("Set Marital Status to:", newFamilyCardForm.maritalStatus ? newFamilyCardForm.maritalStatus.value : 'Not found');
+
+            // 생년월일 - YYYY년 MM월 DD일 형식 -> YYYY-MM-DD로 변환하여 date input에 설정
+            const birth = getMatch(ocrText, /생년월일\s*:\s*(?:예\s*:\s*)?(\d{4}\s*년\s*\d{1,2}\s*월\s*\d{1,2}\s*일)/);
+            if (newFamilyCardForm.birthDate) newFamilyCardForm.birthDate.value = koreanDateToIso(birth);
+            console.log("Extracted Birth Date (ISO):", newFamilyCardForm.birthDate ? newFamilyCardForm.birthDate.value : 'Not found');
+
+            // 전화 번호 - 숫자, 하이픈만 허용 (OCR 오류로 인한 공백, 점 제거 후 하이픈으로 통일)
+            const phone = getMatch(ocrText, /전화\s*번호\s*:\s*(?:예\s*:\s*)?(\d{2,3}[-.\s]?\d{3,4}[-.\s]?\d{4})/).replace(/[\s.]/g, '-');
+            if (newFamilyCardForm.phoneNumber) newFamilyCardForm.phoneNumber.value = phone;
+            console.log("Extracted Phone Number:", phone);
+
+            // 신앙 경력 (정확한 단어만 인식) - '초신자', '성도', '집사', '권사', '장로' 중 하나
+            if (newFamilyCardForm.faithHistory) {
+                if (ocrText.includes('O 성도') || ocrText.includes('성도O') || (ocrText.includes('성도') && !ocrText.includes('초신자'))) {
+                    newFamilyCardForm.faithHistory.value = '성도';
+                } else if (ocrText.includes('O 초신자') || ocrText.includes('초신자O') || (ocrText.includes('초신자') && !ocrText.includes('성도'))) {
+                    newFamilyCardForm.faithHistory.value = '초신자';
+                } else if (ocrText.includes('O 집사') || ocrText.includes('집사O') || ocrText.includes('집사')) {
+                    newFamilyCardForm.faithHistory.value = '집사';
+                } else if (ocrText.includes('O 권사') || ocrText.includes('권사O') || ocrText.includes('권사')) {
+                    newFamilyCardForm.faithHistory.value = '권사';
+                } else if (ocrText.includes('O 장로') || ocrText.includes('장로O') || ocrText.includes('장로')) {
+                    newFamilyCardForm.faithHistory.value = '장로';
+                } else {
+                    newFamilyCardForm.faithHistory.forEach(radio => radio.checked = false);
+                }
+            }
+            console.log("Set Faith History to:", newFamilyCardForm.faithHistory ? newFamilyCardForm.faithHistory.value : 'Not found');
+
+            // 세례 여부 ('O' 또는 'X'만 인식)
+            if (newFamilyCardForm.baptism) {
+                // '세례 여부' 레이블 바로 뒤에 'O' 또는 'X'가 오는 패턴 우선
+                const baptismMatch = ocrText.match(/세례\s*여부\s*:\s*(?:예\s*:\s*)?([OX])/i);
+                if (baptismMatch && baptismMatch[1]) {
+                    newFamilyCardForm.baptism.value = baptismMatch[1].toUpperCase();
+                }
+                // 'O'나 'X' 단독으로 OCR 텍스트에 포함된 경우
+                else if (ocrText.includes('O') && !ocrText.includes('X')) { // 'O'가 있고 'X'가 없으면 'O'
+                    newFamilyCardForm.baptism.value = 'O';
+                } else if (ocrText.includes('X') && !ocrText.includes('O')) { // 'X'가 있고 'O'가 없으면 'X'
+                    newFamilyCardForm.baptism.value = 'X';
+                } else {
+                    newFamilyCardForm.baptism.forEach(radio => radio.checked = false);
+                }
+            }
+            console.log("Set Baptism to:", newFamilyCardForm.baptism ? newFamilyCardForm.baptism.value : 'Not found');
+
+            // 차량 번호 - 숫자, 한글, 공백, 하이픈만 허용, 영어 레이블 제외
+            // '차량 번호 :' 다음에 오는 텍스트를 가능한 한 넓게 캡처하고, 불필요한 문자를 제거
+            // '예 :' 다음에 올 수 있는 다양한 문자열을 포함하여 캡처
+            const rawCarNum = getMatch(ocrText, /차량\s*번호\s*:\s*(?:예\s*:\s*)?([\s\d가-힣-]+?)(?:\s*\(Vehicle\s*Number:.*?)?(?=\s*주\s*소|\n|$)/);
+            // 숫자, 한글, 하이픈만 남기고 모든 공백 제거 (공백 제거 후에도 '저'와 같은 한글은 유지)
+            const cleanedCarNum = rawCarNum.replace(/[\s]/g, '').replace(/[^가-힣\d-]/g, '');
+            if (newFamilyCardForm.carNumber) newFamilyCardForm.carNumber.value = cleanedCarNum;
+            console.log("Extracted Car Number:", cleanedCarNum);
+
+            // 주소 - 한글, 숫자, 공백, 하이픈, 괄호만 허용, 영어 레이블 제외
+            const address = getMatch(ocrText, /주\s*소\s*:\s*(?:예\s*:\s*)?([가-힣\d\s()-]+?)(?:\s*\(Address:.*?)?(?=\*\s*등록\s*후|\n\*|\n|담임\s*목사님|\s*ANNOINTING|$)/s);
+            if (newFamilyCardForm.address) newFamilyCardForm.address.value = address ? address.replace(/\s+/g, ' ').trim() : '';
+            console.log("Extracted Address:", address);
+
+            // 담임 목사님과 카톡 연결 ('원합니다' 또는 '원하지 않습니다'만 인식)
+            const kakaoConnectText = getMatch(ocrText, /카톡\s*연결\s*을\s*원\s*하는\s*경우\s*만\s*체크\s*해\s*주세요\s*\.\s*(원합니다|원하지\s*않습니다)/);
+            if (newFamilyCardForm.kakaoConnect) {
+                if (kakaoConnectText) {
+                    newFamilyCardForm.kakaoConnect.value = kakaoConnectText;
+                } else {
+                    newFamilyCardForm.kakaoConnect.forEach(radio => radio.checked = false);
+                }
+            }
+            console.log("Extracted Kakao Connect:", kakaoConnectText);
+
+            // 자녀 (한글, 숫자, 괄호, 공백만 허용)
+            // '자녀 (이름, 나이) :' 다음에 오는 텍스트를 다음 주요 섹션(예: 'ANNOINTING', '화양 교회') 전까지 캡처
+            const children = getMatch(ocrText, /자녀(?:\s*\(이름\s*,\s*나이\))?\s*:\s*(?:예\s*:\s*)?([\s\d가-힣()]+?)(?=\s*ANNOINTING|\s*화양\s*교회|\s*This\s*image\s*might\s*show:|$)/s);
+            if (newFamilyCardForm.children) newFamilyCardForm.children.value = children ? children.trim() : '';
+            console.log("Extracted Children:", children);
+        }
+
+        // 이미지 업로드 핸들러
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                if (imagePreviewContainer) imagePreviewContainer.classList.add('hidden');
+                return;
+            }
+
+            if (imagePreview && imagePreviewContainer && loadingIndicator) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    imagePreviewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+
+                loadingIndicator.classList.remove('hidden');
+            }
+            
+            clearForm();
+            try {
+                const base64ImageData = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+
+                const prompt = "이 이미지에서 모든 텍스트를 추출해줘.";
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: prompt },
+                                {
+                                    inlineData: {
+                                        mimeType: file.type,
+                                        data: base64ImageData
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const ocrText = result.candidates[0].content.parts[0].text;
+                    parseAndFillForm(ocrText);
+                } else {
+                    console.error("API 응답 구조가 예상과 다릅니다:", result);
+                    showMessageBox("텍스트를 인식할 수 없습니다. 다시 시도해주세요.");
+                }
+            } catch (error) {
+                console.error("텍스트 인식 중 오류 발생:", error);
+                showMessageBox("텍스트 인식 중 오류가 발생했습니다. 네트워크 연결을 확인하거나 다시 시도해주세요.");
+            } finally {
+                if (loadingIndicator) loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        // 양식 지우기 함수
+        function clearForm() {
+            if (newFamilyCardForm) newFamilyCardForm.reset();
+            if (imagePreviewContainer) imagePreviewContainer.classList.add('hidden');
+            if (imageUpload) imageUpload.value = '';
+            if (imagePreview) imagePreview.src = '#';
+        }
+
+        /**
+         * 현재 양식의 데이터를 객체로 가져옵니다.
+         * @returns {Object} 양식 데이터.
+         */
+        function getFormData() {
+            if (!newFamilyCardForm) {
+                console.error("Form element 'newFamilyCardForm' not found for getFormData.");
+                return {};
+            }
+            const data = {
+                cardNo: newFamilyCardForm.cardNo ? newFamilyCardForm.cardNo.value : '',
+                ministerName: newFamilyCardForm.ministerName ? newFamilyCardForm.ministerName.value : '',
+                evangelist: newFamilyCardForm.evangelist ? newFamilyCardForm.evangelist.value : '',
+                registrationDate: newFamilyCardForm.registrationDate ? newFamilyCardForm.registrationDate.value : '',
+                name: newFamilyCardForm.name ? newFamilyCardForm.name.value : '',
+                gender: newFamilyCardForm.gender ? newFamilyCardForm.gender.value : '',
+                maritalStatus: newFamilyCardForm.maritalStatus ? newFamilyCardForm.maritalStatus.value : '',
+                birthDate: newFamilyCardForm.birthDate ? isoDateToKorean(newFamilyCardForm.birthDate.value) : '', // ISO to Korean
+                phoneNumber: newFamilyCardForm.phoneNumber ? newFamilyCardForm.phoneNumber.value : '',
+                faithHistory: newFamilyCardForm.faithHistory ? newFamilyCardForm.faithHistory.value : '',
+                baptism: newFamilyCardForm.baptism ? newFamilyCardForm.baptism.value : '',
+                carNumber: newFamilyCardForm.carNumber ? newFamilyCardForm.carNumber.value : '',
+                address: newFamilyCardForm.address ? newFamilyCardForm.address.value : '',
+                kakaoConnect: newFamilyCardForm.kakaoConnect ? newFamilyCardForm.kakaoConnect.value : '',
+                children: newFamilyCardForm.children ? newFamilyCardForm.children.value : '',
+                timestamp: new Date().toISOString()
+            };
+            return data;
+        }
+
+        /**
+         * 객체 데이터를 양식 필드에 채웁니다.
+         * @param {Object} data - 채울 데이터 객체.
+         */
+        function fillFormWithData(data) {
+            if (!newFamilyCardForm) {
+                console.error("Form element 'newFamilyCardForm' not found for fillFormWithData.");
+                return;
+            }
+            if (newFamilyCardForm.ministerName) newFamilyCardForm.ministerName.value = data.ministerName || '';
+            if (newFamilyCardForm.evangelist) newFamilyCardForm.evangelist.value = data.evangelist || '';
+            if (newFamilyCardForm.registrationDate) newFamilyCardForm.registrationDate.value = data.registrationDate || '';
+            if (newFamilyCardForm.name) newFamilyCardForm.name.value = data.name || '';
+            
+            if (newFamilyCardForm.gender) {
+                const genderRadio = newFamilyCardForm.querySelector(`input[name="gender"][value="${data.gender}"]`);
+                if (genderRadio) genderRadio.checked = true;
+                else newFamilyCardForm.gender.forEach(radio => radio.checked = false);
+            }
+            if (newFamilyCardForm.maritalStatus) {
+                const maritalRadio = newFamilyCardForm.querySelector(`input[name="maritalStatus"][value="${data.maritalStatus}"]`);
+                if (maritalRadio) maritalRadio.checked = true;
+                else newFamilyCardForm.maritalStatus.forEach(radio => radio.checked = false);
+            }
+
+            if (newFamilyCardForm.birthDate) {
+                // Assuming data.birthDate could be in Korean or ISO format from previous saves
+                const isoDate = koreanDateToIso(data.birthDate); // Try converting from Korean to ISO
+                newFamilyCardForm.birthDate.value = isoDate || data.birthDate || ''; // Use converted or original if already ISO
+            }
+            if (newFamilyCardForm.phoneNumber) newFamilyCardForm.phoneNumber.value = data.phoneNumber || '';
+
+            if (newFamilyCardForm.faithHistory) {
+                const faithRadio = newFamilyCardForm.querySelector(`input[name="faithHistory"][value="${data.faithHistory}"]`);
+                if (faithRadio) faithRadio.checked = true;
+                else newFamilyCardForm.faithHistory.forEach(radio => radio.checked = false);
+            }
+
+            if (newFamilyCardForm.baptism) {
+                const baptismRadio = newFamilyCardForm.querySelector(`input[name="baptism"][value="${data.baptism}"]`);
+                if (baptismRadio) baptismRadio.checked = true;
+                else newFamilyCardForm.baptism.forEach(radio => radio.checked = false);
+            }
+
+            if (newFamilyCardForm.carNumber) newFamilyCardForm.carNumber.value = data.carNumber || '';
+            if (newFamilyCardForm.address) newFamilyCardForm.address.value = data.address || '';
+
+            if (newFamilyCardForm.kakaoConnect) {
+                const kakaoRadio = newFamilyCardForm.querySelector(`input[name="kakaoConnect"][value="${data.kakaoConnect}"]`);
+                if (kakaoRadio) kakaoRadio.checked = true;
+                else newFamilyCardForm.kakaoConnect.forEach(radio => radio.checked = false);
+            }
+            if (newFamilyCardForm.children) newFamilyCardForm.children.value = data.children || '';
+
+            // 이미지 미리보기 설정
+            if (data.imageUrl && imagePreview) {
+                imagePreview.src = data.imageUrl;
+                if (imagePreviewContainer) imagePreviewContainer.classList.remove('hidden');
+            } else {
+                if (imagePreview) imagePreview.src = '#';
+                if (imagePreviewContainer) imagePreviewContainer.classList.add('hidden');
+            }
+        }
+
+        /**
+         * 새 가족 등록 카드를 Firestore에 저장합니다.
+         */
+        async function saveCard() {
+            console.log("saveCard 함수 호출됨.");
+            if (!isAuthReady || !db || !userId || !storage) {
+                console.warn("저장할 준비가 되지 않았습니다: isAuthReady, db, userId, 또는 storage가 유효하지 않습니다.");
+                showMessageBox("인증 준비 중이거나 Firebase 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.");
+                return;
+            }
+
+            const cardData = getFormData();
+            console.log("폼 데이터:", cardData);
+
+            if (!cardData.name || !cardData.phoneNumber) {
+                showMessageBox("이름과 전화 번호는 필수로 입력해야 합니다.");
+                return;
+            }
+
+            // 이미지 파일 처리
+            const imageFile = imageUpload.files[0];
+            let imageUrl = '';
+
+            if (imageFile) {
+                try {
+                    // 이미지 업로드 경로 설정: images/{appId}/users/{userId}/newFamilyCards/{timestamp_filename}
+                    const storagePath = `images/${appId}/users/${userId}/newFamilyCards/${Date.now()}_${imageFile.name}`;
+                    const storageRef = ref(storage, storagePath);
+                    
+                    // 이미지 업로드
+                    const uploadResult = await uploadBytes(storageRef, imageFile);
+                    // 업로드된 이미지의 다운로드 URL 가져오기
+                    imageUrl = await getDownloadURL(uploadResult.ref);
+                    console.log("Image uploaded. URL:", imageUrl);
+                } catch (imageError) {
+                    console.error("이미지 업로드 중 오류 발생:", imageError);
+                    showMessageBox(`이미지 업로드에 실패했습니다: ${imageError.message}`);
+                    return; // 이미지 업로드 실패 시 카드 저장 중단
+                }
+            }
+            cardData.imageUrl = imageUrl; // 이미지 URL을 카드 데이터에 추가
+
+            try {
+                const cardsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/newFamilyCards`);
+                console.log(`카드를 다음 컬렉션에 저장 시도: artifacts/${appId}/users/${userId}/newFamilyCards`);
+                await addDoc(cardsCollectionRef, cardData);
+                console.log("카드 성공적으로 저장됨!");
+                showMessageBox("새 가족 등록 카드가 성공적으로 저장되었습니다!");
+                showListPage();
+            }
+            catch (error) {
+                console.error("카드 저장 중 오류 발생:", error);
+                showMessageBox(`카드 저장에 실패했습니다. 오류: ${error.message}`);
+            }
+        }
+
+        /**
+         * 저장된 새 가족 등록 카드 목록을 불러와 표시합니다.
+         * @param {string} [searchQuery=''] - 검색어 (이름 또는 전화 번호).
+         */
+        async function loadCards(searchQuery = '') {
+            console.log("loadCards 함수 호출됨. 검색어:", searchQuery);
+            if (!isAuthReady || !db || !userId) {
+                console.log("Firebase 인증 준비 중이므로 카드 로드를 건너깁니다.");
+                return;
+            }
+
+            if (!savedCardsList || !noCardsMessage) {
+                console.error("필수 UI 요소(savedCardsList 또는 noCardsMessage)를 찾을 수 없습니다. 카드 로드를 진행할 수 없습니다.");
+                showMessageBox("카드 목록 요소를 찾을 수 없습니다. 페이지를 새로고침해주세요.");
+                return;
+            }
+
+            savedCardsList.innerHTML = '';
+            noCardsMessage.classList.add('hidden');
+
+            try {
+                const cardsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/newFamilyCards`);
+                const snapshot = await getDocs(cardsCollectionRef);
+                let cards = [];
+                snapshot.forEach(doc => {
+                    cards.push({ id: doc.id, ...doc.data() });
+                });
+
+                if (searchQuery) {
+                    const lowerCaseQuery = searchQuery.toLowerCase();
+                    cards = cards.filter(card =>
+                        (card.name && card.name.toLowerCase().includes(lowerCaseQuery)) ||
+                        (card.phoneNumber && card.phoneNumber.toLowerCase().includes(lowerCaseQuery))
+                    );
+                }
+
+                if (cards.length === 0) {
+                    noCardsMessage.classList.remove('hidden');
+                    noCardsMessage.innerText = searchQuery ? "검색 결과가 없습니다." : "저장된 카드가 없습니다.";
+                    return;
+                }
+
+                cards.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                cards.forEach(card => {
+                    const cardItem = document.createElement('div');
+                    cardItem.className = 'card-item';
+                    cardItem.innerHTML = `
+                        <div class="card-item-info">
+                            <strong>${card.name || '이름 미상'}</strong> - ${card.phoneNumber || '전화번호 미상'}
+                            <br><small>${new Date(card.timestamp).toLocaleString()}</small>
+                        </div>
+                        <div class="card-item-actions">
+                            <button class="btn btn-primary btn-sm load-card-btn" data-id="${card.id}" type="button">불러오기</button>
+                            <button class="btn btn-secondary btn-sm delete-card-btn" data-id="${card.id}" type="button">삭제</button>
+                        </div>
+                    `;
+                    savedCardsList.appendChild(cardItem);
+                });
+
+                savedCardsList.querySelectorAll('.load-card-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const cardId = e.target.dataset.id;
+                        const selectedCard = cards.find(c => c.id === cardId);
+                        if (selectedCard) {
+                            showViewPage(selectedCard);
+                        }
+                    });
+                });
+
+                savedCardsList.querySelectorAll('.delete-card-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const cardId = e.target.dataset.id;
+                        showConfirmBox("정말로 이 카드를 삭제하시겠습니까?", async (confirmed) => {
+                            if (confirmed) {
+                                await deleteCard(cardId);
+                            }
+                        });
+                    });
+                });
+
+            } catch (error) {
+                console.error("카드 목록 로드 중 오류 발생:", error);
+                showMessageBox(`카드 목록을 불러오는 데 실패했습니다. 오류: ${error.message}`);
+            }
+        }
+
+        /**
+         * 새 가족 등록 카드를 Firestore에서 삭제합니다.
+         * @param {string} cardId - 삭제할 카드의 ID.
+         */
+        async function deleteCard(cardId) {
+            console.log("deleteCard 함수 호출됨. 삭제할 카드 ID:", cardId);
+            if (!isAuthReady || !db || !userId) {
+                console.warn("삭제할 준비가 되지 않았습니다: isAuthReady, db, 또는 userId가 유효하지 않습니다.");
+                showMessageBox("인증 준비 중입니다. 잠시 후 다시 시도해주세요.");
+                return;
+            }
+            try {
+                const cardDocRef = doc(db, `artifacts/${appId}/users/${userId}/newFamilyCards`, cardId);
+                await deleteDoc(cardDocRef);
+                console.log("카드 성공적으로 삭제됨!");
+                showMessageBox("카드가 성공적으로 삭제되었습니다.");
+                await loadCards();
+            } catch (error) {
+                console.error("카드 삭제 중 오류 발생:", error);
+                showMessageBox(`카드 삭제에 실패했습니다. 오류: ${error.message}`);
+            }
+        }
+
+        /**
+         * 현재 로드된 새 가족 등록 카드 데이터를 CSV 형식으로 변환하여 다운로드합니다.
+         */
+        async function exportCardsToCsv() {
+            console.log("exportCardsToCsv 함수 호출됨.");
+            if (!isAuthReady || !db || !userId) {
+                showMessageBox("인증 준비 중이거나 Firebase 연결에 문제가 있어 카드를 다운로드할 수 없습니다.");
+                return;
+            }
+
+            try {
+                const cardsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/newFamilyCards`);
+                const snapshot = await getDocs(cardsCollectionRef);
+                let cards = [];
+                snapshot.forEach(doc => {
+                    cards.push(doc.data());
+                });
+
+                if (cards.length === 0) {
+                    showMessageBox("다운로드할 카드가 없습니다.");
+                    return;
+                }
+
+                const headers = [
+                    { key: 'cardNo', label: 'NO.' },
+                    { key: 'ministerName', label: '목사님 (청장년)' },
+                    { key: 'evangelist', label: '전도자' },
+                    { key: 'registrationDate', label: '등록일' },
+                    { key: 'name', label: '이름' },
+                    { key: 'gender', label: '성별' },
+                    { key: 'maritalStatus', label: '결혼 여부' },
+                    { key: 'birthDate', label: '생년월일' },
+                    { key: 'phoneNumber', label: '전화 번호' },
+                    { key: 'faithHistory', label: '신앙 경력' },
+                    { key: 'baptism', label: '세례 여부' },
+                    { key: 'carNumber', label: '차량 번호' },
+                    { key: 'address', label: '주소' },
+                    { key: 'kakaoConnect', label: '카톡 연결' },
+                    { key: 'children', label: '자녀' },
+                    { key: 'imageUrl', label: '이미지 URL' }, // 이미지 URL 필드 추가
+                    { key: 'timestamp', label: '저장 시간' }
+                ];
+
+                let csvContent = headers.map(h => `"${h.label}"`).join(',') + '\n';
+
+                cards.forEach(card => {
+                    let row = headers.map(h => {
+                        let value = card[h.key] || '';
+                        value = String(value).replace(/"/g, '""');
+                        if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+                            value = `"${value}"`;
+                        }
+                        return value;
+                    }).join(',');
+                    csvContent += row + '\n';
+                });
+
+                const blob = new Blob(["\uFEFF", csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `새가족_등록카드_${new Date().toISOString().slice(0,10)}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showMessageBox("새 가족 등록 카드가 CSV 파일로 다운로드되었습니다!");
+
+            } catch (error) {
+                console.error("새 가족 등록 카드 CSV 다운로드 중 오류 발생:", error);
+                showMessageBox(`카드 다운로드에 실패했습니다. 오류: ${error.message}`);
+            }
+        }
+
+        // 페이지 전환 함수들
+        function showFormPage() {
+            if (formPage) formPage.classList.remove('hidden');
+            if (listPage) listPage.classList.add('hidden');
+            if (viewPage) viewPage.classList.add('hidden');
+        }
+
+        async function showListPage() {
+            if (formPage) formPage.classList.add('hidden');
+            if (listPage) listPage.classList.remove('hidden');
+            if (viewPage) viewPage.classList.add('hidden');
+            await loadCards();
+        }
+
+        /**
+         * 새 가족 등록 카드 상세 보기 페이지를 표시하고 데이터를 채웁니다.
+         * @param {Object} cardData - 표시할 카드 데이터.
+         */
+        function showViewPage(cardData) {
+            if (formPage) formPage.classList.add('hidden');
+            if (listPage) listPage.classList.add('hidden');
+            if (viewPage) viewPage.classList.remove('hidden');
+
+            // 상세 보기 페이지의 요소에 데이터 채우기
+            if (viewCardNo) viewCardNo.textContent = cardData.cardNo || '정보 없음';
+            if (viewMinisterName) viewMinisterName.textContent = cardData.ministerName || '정보 없음';
+            if (viewEvangelist) viewEvangelist.textContent = cardData.evangelist || '정보 없음';
+            if (viewRegistrationDate) viewRegistrationDate.textContent = cardData.registrationDate || '정보 없음';
+            if (viewName) viewName.textContent = cardData.name || '정보 없음';
+            if (viewGender) viewGender.textContent = cardData.gender || '정보 없음';
+            if (viewMaritalStatus) viewMaritalStatus.textContent = cardData.maritalStatus || '정보 없음';
+            if (viewBirthDate) viewBirthDate.textContent = cardData.birthDate || '정보 없음';
+            if (viewPhoneNumber) viewPhoneNumber.textContent = cardData.phoneNumber || '정보 없음';
+            if (viewFaithHistory) viewFaithHistory.textContent = cardData.faithHistory || '정보 없음';
+            if (viewBaptism) viewBaptism.textContent = cardData.baptism || '정보 없음';
+            if (viewCarNumber) viewCarNumber.textContent = cardData.carNumber || '정보 없음';
+            if (viewAddress) viewAddress.textContent = cardData.address || '정보 없음';
+            if (viewKakaoConnect) viewKakaoConnect.textContent = cardData.kakaoConnect || '정보 없음';
+            if (viewChildren) viewChildren.textContent = cardData.children || '정보 없음';
+            if (viewTimestamp) viewTimestamp.textContent = new Date(cardData.timestamp).toLocaleString() || '정보 없음';
+
+            // 이미지 표시
+            if (viewImage) {
+                if (cardData.imageUrl) {
+                    viewImage.src = cardData.imageUrl;
+                    viewImage.style.display = 'block';
+                    if (noImageView) noImageView.classList.add('hidden');
+                } else {
+                    viewImage.src = '#';
+                    viewImage.style.display = 'none';
+                    if (noImageView) noImageView.classList.remove('hidden');
+                }
+            }
+
+            // '양식에서 편집' 버튼에 데이터 연결
+            if (editCardBtn) {
+                editCardBtn.onclick = () => {
+                    fillFormWithData(cardData);
+                    showFormPage();
+                };
+            }
+        }
+
+        // DOMContentLoaded 이벤트 리스너를 사용하여 모든 요소가 로드된 후 함수를 할당
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM 요소 참조 가져오기
+            formPage = document.getElementById('formPage');
+            listPage = document.getElementById('listPage');
+            viewPage = document.getElementById('viewPage');
+            imageUpload = document.getElementById('imageUpload');
+            imagePreview = document.getElementById('imagePreview');
+            imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            loadingIndicator = document.getElementById('loadingIndicator');
+            newFamilyCardForm = document.getElementById('newFamilyCardForm');
+            clearFormBtn = document.getElementById('clearFormBtn');
+            saveCardBtn = document.getElementById('saveCardBtn');
+            viewCardsListBtn = document.getElementById('viewCardsListBtn');
+            createNewCardBtn = document.getElementById('createNewCardBtn');
+            messageBox = document.getElementById('messageBox');
+            messageText = document.getElementById('messageText');
+            messageBoxConfirmBtn = document.getElementById('messageBoxConfirmBtn');
+            confirmBox = document.getElementById('confirmBox');
+            confirmText = document.getElementById('confirmText');
+            confirmBoxYesBtn = document.getElementById('confirmBoxYesBtn');
+            confirmBoxNoBtn = document.getElementById('confirmBoxNoBtn');
+            overlay = document.getElementById('overlay');
+            savedCardsList = document.getElementById('savedCardsList');
+            noCardsMessage = document.getElementById('noCardsMessage');
+            searchQueryInput = document.getElementById('searchQuery');
+            searchCardsBtn = document.getElementById('searchCardsBtn');
+            refreshCardsBtn = document.getElementById('refreshCardsBtn');
+            downloadCardsBtn = document.getElementById('downloadCardsBtn');
+            backToListBtn = document.getElementById('backToListBtn');
+            editCardBtn = document.getElementById('editCardBtn');
+
+            // 상세 보기 페이지 요소들 참조
+            viewCardNo = document.getElementById('viewCardNo');
+            viewMinisterName = document.getElementById('viewMinisterName');
+            viewEvangelist = document.getElementById('viewEvangelist');
+            viewRegistrationDate = document.getElementById('viewRegistrationDate');
+            viewName = document.getElementById('viewName');
+            viewGender = document.getElementById('viewGender');
+            viewMaritalStatus = document.getElementById('viewMaritalStatus');
+            viewBirthDate = document.getElementById('viewBirthDate');
+            viewPhoneNumber = document.getElementById('viewPhoneNumber');
+            viewFaithHistory = document.getElementById('viewFaithHistory');
+            viewBaptism = document.getElementById('viewBaptism');
+            viewCarNumber = document.getElementById('viewCarNumber');
+            viewAddress = document.getElementById('viewAddress');
+            viewKakaoConnect = document.getElementById('viewKakaoConnect');
+            viewChildren = document.getElementById('viewChildren');
+            viewTimestamp = document.getElementById('viewTimestamp');
+            viewImage = document.getElementById('viewImage');
+            noImageView = document.getElementById('noImageView');
+
+
+            // 이벤트 리스너 할당 (요소가 존재하는지 확인 후)
+            if (imageUpload) imageUpload.addEventListener('change', handleImageUpload);
+            if (clearFormBtn) clearFormBtn.addEventListener('click', clearForm);
+            if (saveCardBtn) saveCardBtn.addEventListener('click', saveCard);
+            if (messageBoxConfirmBtn) messageBoxConfirmBtn.addEventListener('click', hideMessageBox);
+            
+            // 페이지 전환 버튼 이벤트 리스너
+            if (viewCardsListBtn) viewCardsListBtn.addEventListener('click', showListPage);
+            if (createNewCardBtn) createNewCardBtn.addEventListener('click', () => {
+                clearForm();
+                showFormPage();
+            });
+            if (backToListBtn) backToListBtn.addEventListener('click', showListPage);
+
+            if (searchCardsBtn) searchCardsBtn.addEventListener('click', () => {
+                const searchQuery = searchQueryInput ? searchQueryInput.value : '';
+                loadCards(searchQuery);
+            });
+            if (refreshCardsBtn) refreshCardsBtn.addEventListener('click', () => {
+                if (searchQueryInput) searchQueryInput.value = '';
+                loadCards();
+            });
+            if (downloadCardsBtn) downloadCardsBtn.addEventListener('click', exportCardsToCsv);
+
+            // Firebase 초기화 시작
+            initializeFirebase();
+        });
+    </script>
+</body>
+</html>
