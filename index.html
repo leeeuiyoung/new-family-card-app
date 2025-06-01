@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>새 가족 등록 카드 자동 입력 및 저장</title>
+<div id="formPage">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
@@ -206,7 +207,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 p-4 sm:p-6 lg:p-8">
+<body>
     <div class="container">
         <div id="formPage" class="page">
             <h1 class="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800">새 가족 등록 카드 자동 입력 및 저장</h1>
@@ -491,24 +492,32 @@
 
     <script type="module">
         // Firebase 관련 전역 변수 초기화 (Canvas 환경에서 제공됨)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const firebaseConfig = {
+          apiKey: "AIzaSyDXBcETcsAKT04jieCtlzS_pmMLqBOd94o",
+          authDomain: "banaba-project.firebaseapp.com",
+          projectId: "banaba-project",
+          storageBucket: "banaba-project.appspot.com", // storageBucket은 .appspot.com 으로 끝나는 것이 일반적입니다.
+          messagingSenderId: "238138546865",
+          appId: "1:238138546865:web:4b20fe1b93cce77e52e090",
+          measurementId: "G-S71XYGV6FR"
+        };
+
+        // 배포 환경에서는 firebaseConfig에서 appId를 가져와 사용합니다.
+        const appId = firebaseConfig.appId;
 
         // Firebase SDK 가져오기
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        // Firebase Storage SDK 추가
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 
         let app;
         let auth;
         let db;
-        let storage; // Firebase Storage 인스턴스
-        let userId = 'anonymous'; // 기본값
-        let isAuthReady = false; // 인증 상태를 추적하는 플래그
+        let storage; 
+        let userId = 'anonymous'; 
+        let isAuthReady = false; 
 
         // 전역 DOM 요소 변수 선언 (DOMContentLoaded 이후에 할당됨)
         let formPage;
@@ -557,15 +566,15 @@
         let viewKakaoConnect;
         let viewChildren;
         let viewTimestamp;
-        let viewImage; // 상세 보기 페이지에 이미지 표시를 위한 요소
-        let noImageView; // 이미지가 없을 때 표시할 텍스트
+        let viewImage; 
+        let noImageView; 
 
         // Firebase 초기화 및 인증
         async function initializeFirebase() {
             console.log("Firebase 초기화 시작...");
             try {
-                if (Object.keys(firebaseConfig).length === 0) {
-                    console.warn("Firebase config가 비어 있습니다. Firebase가 초기화되지 않습니다.");
+                if (!firebaseConfig.apiKey) { // 설정 객체가 비어있는지 확인
+                    console.warn("Firebase config가 누락되었습니다. 앱을 초기화할 수 없습니다.");
                     showMessageBox("Firebase 설정이 누락되었습니다. 앱을 초기화할 수 없습니다.");
                     return;
                 }
@@ -573,7 +582,7 @@
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-                storage = getStorage(app); // Firebase Storage 초기화
+                storage = getStorage(app); 
 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
@@ -583,13 +592,10 @@
                     } else {
                         console.log("Firebase: 사용자 인증되지 않음. 익명 로그인 시도...");
                         try {
-                            if (initialAuthToken) {
-                                await signInWithCustomToken(auth, initialAuthToken);
-                            } else {
-                                await signInAnonymously(auth);
-                            }
-                            userId = auth.currentUser?.uid || crypto.randomUUID();
-                            console.log("Firebase: 익명 또는 커스텀 토큰으로 로그인 완료. 사용자 ID:", userId);
+                            await signInAnonymously(auth);
+                            console.log("Firebase: Signed in anonymously.");
+                            userId = auth.currentUser?.uid || crypto.randomUUID(); 
+                            console.log("Firebase: 익명으로 로그인 완료. 사용자 ID:", userId);
                             isAuthReady = true;
                         } catch (authError) {
                             console.error("Firebase 인증 오류:", authError);
@@ -681,8 +687,8 @@
             const match = isoDateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
             if (match) {
                 const year = match[1];
-                const month = parseInt(match[2], 10); // 0 제거를 위해 parseInt
-                const day = parseInt(match[3], 10);   // 0 제거를 위해 parseInt
+                const month = parseInt(match[2], 10); 
+                const day = parseInt(match[3], 10);   
                 return `${year}년 ${month}월 ${day}일`;
             }
             return isoDateStr; // 변환 실패 시 원본 반환
@@ -739,7 +745,7 @@
 
             // 결혼 여부 ('기혼' 또는 '미혼'이 OCR 텍스트에 포함되어 있는지 확인하여 정확히 일치)
             if (newFamilyCardForm.maritalStatus) {
-                // 'O 기혼' 또는 '기혼 O' 패턴이 먼저 인식되면 '기혼'으로 설정
+                // OCR 텍스트에서 'O'와 함께 '기혼' 또는 '미혼'을 찾는 경우 우선 처리
                 if (ocrText.includes('O 기혼') || ocrText.includes('기혼 O')) {
                     newFamilyCardForm.maritalStatus.value = '기혼';
                 } 
@@ -808,7 +814,6 @@
 
             // 차량 번호 - 숫자, 한글, 공백, 하이픈만 허용, 영어 레이블 제외
             // '차량 번호 :' 다음에 오는 텍스트를 가능한 한 넓게 캡처하고, 불필요한 문자를 제거
-            // '예 :' 다음에 올 수 있는 다양한 문자열을 포함하여 캡처
             const rawCarNum = getMatch(ocrText, /차량\s*번호\s*:\s*(?:예\s*:\s*)?([\s\d가-힣-]+?)(?:\s*\(Vehicle\s*Number:.*?)?(?=\s*주\s*소|\n|$)/);
             // 숫자, 한글, 하이픈만 남기고 모든 공백 제거 (공백 제거 후에도 '저'와 같은 한글은 유지)
             const cleanedCarNum = rawCarNum.replace(/[\s]/g, '').replace(/[^가-힣\d-]/g, '');
@@ -884,7 +889,7 @@
                     ],
                 };
 
-                const apiKey = "";
+                const apiKey = "AIzaSyDgfZ7wuBv4mgRFjDnrpmvOvOLdl3fp9Qs";
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
@@ -1182,6 +1187,7 @@
 
         /**
          * 현재 로드된 새 가족 등록 카드 데이터를 CSV 형식으로 변환하여 다운로드합니다.
+         * @param {string} [searchQuery=''] - 검색어 (이름 또는 전화 번호).
          */
         async function exportCardsToCsv() {
             console.log("exportCardsToCsv 함수 호출됨.");
